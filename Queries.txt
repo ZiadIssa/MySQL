@@ -1,0 +1,88 @@
+--Find Patients with More than One Appointment in the Last Month
+
+SELECT 
+    p.FirstName, 
+    p.LastName, 
+    COUNT(a.AppointmentID) AS NumberOfAppointments
+FROM 
+    Patients p
+JOIN 
+    Appointments a ON p.PatientID = a.PatientID
+WHERE 
+    a.AppointmentDate BETWEEN DATE_SUB(NOW(), INTERVAL 1 MONTH) AND NOW()
+GROUP BY 
+    p.PatientID
+HAVING 
+    COUNT(a.AppointmentID) > 1;
+
+--List of Departments with Average Staff Salaries Above a Certain Threshold
+
+SELECT 
+    d.Name, 
+    AVG(d.Budget) AS AverageSalary  -- Assuming Budget reflects salary for simplicity
+FROM 
+    Staff s
+JOIN 
+    Departments d ON s.DepartmentID = d.DepartmentID
+GROUP BY 
+    d.DepartmentID
+HAVING 
+    AVG(d.Budget) > 50000;
+
+-- Most Common Treatment Plans for Male Patients
+
+SELECT 
+    tp.Description, 
+    COUNT(*) AS Frequency
+FROM 
+    TreatmentPlans tp
+JOIN 
+    Patients p ON tp.PatientID = p.PatientID
+WHERE 
+    p.Gender = 'Male'
+GROUP BY 
+    tp.Description
+ORDER BY 
+    Frequency DESC
+LIMIT 10;
+
+--Update Room Assignments Based on Equipment Needs
+
+UPDATE Rooms r
+SET r.Capacity = (
+    SELECT COUNT(e.EquipmentID)
+    FROM Equipment e
+    WHERE e.RoomID = r.RoomID
+) + 5
+WHERE r.RoomID IN (
+    SELECT e.RoomID
+    FROM Equipment e
+    GROUP BY e.RoomID
+    HAVING COUNT(e.EquipmentID) > r.Capacity
+);
+
+-- Detailed Report of Patient Visits Last Year by Department
+
+SELECT 
+    d.Name AS Department,
+    p.FirstName,
+    p.LastName,
+    COUNT(ph.HistoryID) AS Visits,
+    MAX(ph.DateOfVisit) AS LastVisit
+FROM 
+    Departments d
+JOIN 
+    Staff s ON d.DepartmentID = s.DepartmentID
+JOIN 
+    Appointments a ON s.StaffID = a.StaffID
+JOIN 
+    Patients p ON a.PatientID = p.PatientID
+JOIN 
+    PatientHistory ph ON p.PatientID = ph.PatientID
+WHERE 
+    YEAR(ph.DateOfVisit) = YEAR(DATE_SUB(CURDATE(), INTERVAL 1 YEAR))
+GROUP BY 
+    d.DepartmentID, p.PatientID
+ORDER BY 
+    Visits DESC, LastVisit DESC;
+

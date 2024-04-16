@@ -1,0 +1,82 @@
+CREATE DATABASE AdvancedHealthcareDB;
+USE AdvancedHealthcareDB;
+
+
+CREATE TABLE Departments (
+    DepartmentID INT AUTO_INCREMENT PRIMARY KEY,
+    Name VARCHAR(100),
+    Budget DECIMAL(10, 2)
+);
+
+
+CREATE TABLE Staff (
+    StaffID INT AUTO_INCREMENT PRIMARY KEY,
+    FirstName VARCHAR(50),
+    LastName VARCHAR(50),
+    Position VARCHAR(100),
+    DepartmentID INT,
+    FOREIGN KEY (DepartmentID) REFERENCES Departments(DepartmentID)
+);
+
+CREATE TABLE Patients (
+    PatientID INT AUTO_INCREMENT PRIMARY KEY,
+    FirstName VARCHAR(50),
+    LastName VARCHAR(50),
+    DOB DATE,
+    Gender VARCHAR(10),
+    Address TEXT,
+    Phone VARCHAR(15)
+);
+
+CREATE TABLE Appointments (
+    AppointmentID INT AUTO_INCREMENT PRIMARY KEY,
+    PatientID INT,
+    StaffID INT,
+    AppointmentDate DATETIME,
+    Purpose TEXT,
+    FOREIGN KEY (PatientID) REFERENCES Patients(PatientID),
+    FOREIGN KEY (StaffID) REFERENCES Staff(StaffID)
+);
+
+
+CREATE TABLE PatientHistory (
+    HistoryID INT AUTO_INCREMENT PRIMARY KEY,
+    PatientID INT,
+    DateOfVisit DATETIME,
+    VisitSummary TEXT,
+    FOREIGN KEY (PatientID) REFERENCES Patients(PatientID)
+);
+
+CREATE TABLE TreatmentPlans (
+    PlanID INT AUTO_INCREMENT PRIMARY KEY,
+    PatientID INT,
+    Description TEXT,
+    StartDate DATE,
+    EndDate DATE,
+    FOREIGN KEY (PatientID) REFERENCES Patients(PatientID)
+);
+
+CREATE TABLE Rooms (
+    RoomID INT AUTO_INCREMENT PRIMARY KEY,
+    RoomType VARCHAR(50),
+    Capacity INT
+);
+
+CREATE TABLE Equipment (
+    EquipmentID INT AUTO_INCREMENT PRIMARY KEY,
+    Name VARCHAR(100),
+    RoomID INT,
+    MaintenanceSchedule DATE,
+    FOREIGN KEY (RoomID) REFERENCES Rooms(RoomID)
+);
+
+DELIMITER $$
+CREATE TRIGGER UpdateBudgetAfterHiring
+AFTER INSERT ON Staff
+FOR EACH ROW
+BEGIN
+    UPDATE Departments
+    SET Budget = Budget + 1000.00
+    WHERE DepartmentID = NEW.DepartmentID;
+END$$
+DELIMITER ;

@@ -1,0 +1,79 @@
+-- Adding a Composite Unique Index to the Appointments Table
+
+ALTER TABLE Appointments
+ADD UNIQUE INDEX idx_unique_appointment (PatientID, StaffID, AppointmentDate);
+
+-- Adding Full-Text Search Capabilities
+
+ALTER TABLE PatientHistory
+ADD FULLTEXT (VisitSummary);
+
+--Introducing a CHECK Constrain
+
+ALTER TABLE Rooms
+ADD CONSTRAINT chk_room_capacity CHECK (Capacity BETWEEN 1 AND 100);
+
+--Changing Data Types for Optimization
+
+ALTER TABLE Patients MODIFY Phone VARCHAR(20);
+ALTER TABLE Doctors MODIFY Phone VARCHAR(20);
+ALTER TABLE Staff MODIFY Phone VARCHAR(20);
+
+--Adding a Trigger for Automatic Data Updates
+
+DELIMITER $$
+CREATE TRIGGER trg_update_last_visit
+AFTER INSERT ON PatientHistory
+FOR EACH ROW
+BEGIN
+    UPDATE Patients
+    SET LastVisitDate = NEW.DateOfVisit
+    WHERE PatientID = NEW.PatientID;
+END$$
+DELIMITER ;
+
+--Creating a Partitioned Table for Performance
+
+ALTER TABLE MedicalRecords
+PARTITION BY RANGE(YEAR(DateOfVisit)) (
+    PARTITION p2020 VALUES LESS THAN (2021),
+    PARTITION p2021 VALUES LESS THAN (2022),
+    PARTITION p2022 VALUES LESS THAN (2023),
+    PARTITION p2023 VALUES LESS THAN (2024),
+    PARTITION p2024 VALUES LESS THAN (2025)
+);
+
+--Adding and Dropping Columns
+
+ALTER TABLE Patients
+ADD Email VARCHAR(100);
+
+ALTER TABLE Staff
+DROP COLUMN Position;
+
+--Introducing Stored Procedures for Data Integrity
+
+DELIMITER $$
+CREATE PROCEDURE AddNewDoctor(
+    IN _firstName VARCHAR(50),
+    IN _lastName VARCHAR(50),
+    IN _specialty VARCHAR(100),
+    IN _phone VARCHAR(15),
+    IN _departmentID INT
+)
+BEGIN
+    -- Example validation: Check if department exists
+    DECLARE departmentExists INT;
+    SELECT COUNT(*) INTO departmentExists
+    FROM Departments
+    WHERE DepartmentID = _departmentID;
+
+    IF departmentExists = 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Error: Department does not exist.';
+    ELSE
+        INSERT INTO Doctors (FirstName, LastName, Specialty, Phone, DepartmentID)
+        VALUES (_firstName, _lastName, _specialty, _phone, _departmentID);
+    END IF;
+END$$
+DELIMITER ;
